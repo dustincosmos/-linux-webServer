@@ -52,6 +52,13 @@ void timer_handler()
     alarm(TIMESLOT);
 }
 
+void cb_func(client_data *user_data)
+{
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, user_data->sockfd, 0);
+    close(user_data->sockfd);
+    http_conn::m_user_count--;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc <= 1)
@@ -128,7 +135,6 @@ int main(int argc, char *argv[])
             // 有连接
             if (sockfd == listenfd)
             {
-                printf("222\n");
                 struct sockaddr_in client_address;
                 socklen_t client_addrlen = sizeof(client_address);
                 int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrlen);
@@ -143,14 +149,15 @@ int main(int argc, char *argv[])
                 // // 将新的客户数据初始化
                 users[connfd].init(connfd, client_address);
 
-                // users_timer[connfd].address = client_address;
-                // users_timer[connfd].socfd = connfd;
-                // until_timer *timer = new until_timer;
-                // timer->user_data = &users_timer[connfd];
-                // timer->cb_func = cb_func;
-                // time_t cur = time(NULL);
-                // timer->experc = cur + 3 * TIMESLOT;
-                // users_timer[connfd].timer = timer;
+                users_timer[connfd].address = client_address;
+                users_timer[connfd].sockfd = connfd;
+                util_timer *timer = new util_timer;
+                timer->user_data = &users_timer[connfd];
+                timer->cb_func = cb_func;
+                time_t cur = time(NULL);
+                timer->expire = cur + 3 * TIMESLOT;
+                users_timer[connfd].timer = timer;
+                // timer_lst.add_timer(timer);
 
                 // while (1)
                 // {
@@ -178,8 +185,7 @@ int main(int argc, char *argv[])
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
                 // 对方异常断开
-                printf("223\n");
-                until_timer *timer = users_timer[sockfd].timer;
+                util_timer *timer = users_timer[sockfd].timer;
                 timer->cb_func(&users_timer[sockfd]);
                 if (timer)
                     timer_lst.del_timer(timer);
@@ -188,7 +194,6 @@ int main(int argc, char *argv[])
             // 处理信号
             else if ((sockfd == pipefd[0]) && (events[i].events & EPOLLIN))
             {
-                printf("224\n");
                 int sig;
                 char signals[1024];
                 int ret = recv(pipefd[0], signals, sizeof(signals), 0);
@@ -221,27 +226,19 @@ int main(int argc, char *argv[])
             }
             else if (events[i].events & EPOLLIN)
             {
-                printf("225\n");
-                until_timer *timer = users_timer[sockfd].timer;
+                util_timer *timer = users_timer[sockfd].timer;
                 if (users[sockfd].read())
                 {
-                    printf("235\n");
                     pool->append(users + sockfd);
-                    printf("335\n");
                     if (timer)
                     {
-                        printf("336\n");
                         time_t cur = time(NULL);
-                        printf("337\n");
-                        timer->experc = cur + 3 * TIMESLOT;
-                        printf("338\n");
+                        timer->expire = cur + 3 * TIMESLOT;
                         timer_lst.adjust_timer(timer);
-                        printf("339\n");
                     }
                 }
                 else
                 {
-                    printf("236\n");
                     timer->cb_func(&users_timer[sockfd]);
                     if (timer)
                     {
@@ -252,12 +249,11 @@ int main(int argc, char *argv[])
             }
             else if (events[i].events & EPOLLOUT)
             {
-                printf("226\n");
                 // if (!users[sockfd].write())
                 // {
                 //     users[sockfd].close_conn();
                 // }
-                until_timer *timer = users_timer[sockfd].timer;
+                util_timer *timer = users_timer[sockfd].timer;
                 if (users[sockfd].write())
                 {
                     // 若有数据传输，则将定时器往后延迟3个单位
@@ -265,7 +261,7 @@ int main(int argc, char *argv[])
                     if (timer)
                     {
                         time_t cur = time(NULL);
-                        timer->experc = cur + 3 * TIMESLOT;
+                        timer->expire = cur + 3 * TIMESLOT;
                         timer_lst.adjust_timer(timer);
                     }
                 }
@@ -281,7 +277,6 @@ int main(int argc, char *argv[])
         }
         if (timeout)
         {
-            printf("222\n");
             timer_handler();
             timeout = false;
         }

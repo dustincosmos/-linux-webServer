@@ -35,10 +35,8 @@ void sort_timer_lst::add_timer(until_timer *timer)
 
 void sort_timer_lst::adjust_timer(until_timer *timer)
 {
-    printf("446\n");
     if (!timer)
         return;
-    printf("447\n");
     until_timer *tmp = timer->next;
     if (timer->experc < tmp->experc)
     {
@@ -46,7 +44,6 @@ void sort_timer_lst::adjust_timer(until_timer *timer)
     }
     if (timer == head)
     {
-        printf("456\n");
         head = head->next;
         timer->prev = NULL;
         timer->next = NULL;
@@ -54,7 +51,6 @@ void sort_timer_lst::adjust_timer(until_timer *timer)
     }
     else
     {
-        printf("457\n");
         timer->prev->next = timer->next;
         timer->next->prev = timer->prev;
 
@@ -96,6 +92,7 @@ void sort_timer_lst::tick()
 {
     if (!head)
         return;
+    printf("time tick\n");
     time_t cur = time(NULL);
     until_timer *tmp = head;
     while (tmp)
