@@ -11,6 +11,7 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <cassert>
 #include "http_conn.h"
 #include "lst_timer.h"
 #define MAX_FD 65536          // 最大文件描述符个数
@@ -30,6 +31,7 @@ void addsig(int sig, void(handler)(int), bool restart = true)
     if (restart)
         sa.sa_flags |= SA_RESTART;
     sigfillset(&sa.sa_mask);
+    assert(sigaction(sig, &sa, NULL) != -1);
 }
 
 // 添加文件描述符到epoll
@@ -39,6 +41,7 @@ extern void removefd(int epolllfd, int fd);
 extern int setnoblocking(int fd);
 void sig_handler(int sig)
 {
+    printf("timne\n");
     // 为保证函数的可重入性，保留原来的errno
     int save_errno = errno;
     int msg = sig;
@@ -48,6 +51,7 @@ void sig_handler(int sig)
 
 void timer_handler()
 {
+    printf("why\n");
     timer_lst.tick();
     alarm(TIMESLOT);
 }
@@ -59,10 +63,10 @@ void cb_func(client_data *user_data)
     http_conn::m_user_count--;
 }
 
-void show_error(int connfd,const char *info)
+void show_error(int connfd, const char *info)
 {
-    printf("%s",info);
-    send(connfd,info,strlen(info),0);
+    printf("%s", info);
+    send(connfd, info, strlen(info), 0);
     close(connfd);
 }
 
@@ -126,7 +130,7 @@ int main(int argc, char *argv[])
 
     client_data *users_timer = new client_data[MAX_FD];
     bool timeout = false;
-    // alarm(TIMESLOT);
+    alarm(TIMESLOT);
     bool stop_server = 0;
     while (!stop_server)
     {
@@ -235,6 +239,7 @@ int main(int argc, char *argv[])
                 util_timer *timer = users_timer[sockfd].timer;
                 if (users[sockfd].read())
                 {
+                    printf(">>>>\n");
                     pool->append(users + sockfd);
                     if (timer)
                     {
@@ -268,6 +273,7 @@ int main(int argc, char *argv[])
                     {
                         time_t cur = time(NULL);
                         timer->expire = cur + 3 * TIMESLOT;
+                        printf("adjust timer once\n");
                         timer_lst.adjust_timer(timer);
                     }
                 }

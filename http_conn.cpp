@@ -146,6 +146,7 @@ http_conn::HTTP_CODE http_conn::process_read()
         text = get_line();
         m_start_line = m_checked_index;
         printf("got one line:%s\n", text);
+        printf("state : %d\n",m_check_state);
         switch (m_check_state)
         {
         case CHECK_STATE_REQUESTLINE:
@@ -438,6 +439,7 @@ void http_conn::unmap()
 
 bool http_conn::write()
 {
+    printf(">>>>>jll\n");
     int temp = 0;
     int bytes_have_send = 0;
     int bytes_to_send = m_write_idx;
@@ -485,13 +487,16 @@ bool http_conn::write()
 // 线程池中工作线程调用
 void http_conn::process()
 {
+    printf("how???\n");
     // 解析http请求
     HTTP_CODE read_ret = process_read();
     if (read_ret == NO_REQUEST)
     {
+        printf("how??33???\n");
         modfd(m_epollfd, m_socketfd, EPOLLIN);
         return;
     }
+    printf("how?????\n");
     // 响应
     bool write_ret = process_write(read_ret);
     if (!write_ret)

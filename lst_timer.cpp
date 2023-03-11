@@ -94,7 +94,10 @@ void sort_timer_lst::del_timer(util_timer *timer)
 void sort_timer_lst::tick()
 {
     if (!head)
+    {
+        printf("bushiba\n");
         return;
+    }
     printf("time tick\n");
     time_t cur = time(NULL);
     util_timer *tmp = head;
