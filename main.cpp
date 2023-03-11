@@ -59,6 +59,13 @@ void cb_func(client_data *user_data)
     http_conn::m_user_count--;
 }
 
+void show_error(int connfd,const char *info)
+{
+    printf("%s",info);
+    send(connfd,info,strlen(info),0);
+    close(connfd);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc <= 1)
@@ -137,50 +144,49 @@ int main(int argc, char *argv[])
             {
                 struct sockaddr_in client_address;
                 socklen_t client_addrlen = sizeof(client_address);
-                int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrlen);
 
-                // 连接满了
-                if (http_conn::m_user_count >= MAX_FD)
-                {
-                    close(connfd);
-                    continue;
-                }
+                // int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrlen);
+                // // 连接满了
+                // if (http_conn::m_user_count >= MAX_FD)
+                // {
+                //     close(connfd);
+                //     continue;
+                // }
+                // // // 将新的客户数据初始化
+                // users[connfd].init(connfd, client_address);
 
-                // // 将新的客户数据初始化
-                users[connfd].init(connfd, client_address);
-
-                users_timer[connfd].address = client_address;
-                users_timer[connfd].sockfd = connfd;
-                util_timer *timer = new util_timer;
-                timer->user_data = &users_timer[connfd];
-                timer->cb_func = cb_func;
-                time_t cur = time(NULL);
-                timer->expire = cur + 3 * TIMESLOT;
-                users_timer[connfd].timer = timer;
+                // users_timer[connfd].address = client_address;
+                // users_timer[connfd].sockfd = connfd;
+                // util_timer *timer = new util_timer;
+                // timer->user_data = &users_timer[connfd];
+                // timer->cb_func = cb_func;
+                // time_t cur = time(NULL);
+                // timer->expire = cur + 3 * TIMESLOT;
+                // users_timer[connfd].timer = timer;
                 // timer_lst.add_timer(timer);
 
-                // while (1)
-                // {
-                //     int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrlen);
-                //     if (connfd < 0)
-                //         break;
-                //     if (http_conn::m_user_count >= MAX_FD)
-                //         break;
-                //     users[connfd].init(connfd, client_address);
+                while (1)
+                {
+                    int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrlen);
+                    if (connfd < 0)
+                        break;
+                    if (http_conn::m_user_count >= MAX_FD)
+                        break;
+                    users[connfd].init(connfd, client_address);
 
-                //     // 初始化client_data数据
-                //     // 创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
-                //     users_timer[connfd].address = client_address;
-                //     users_timer[connfd].socfd = connfd;
-                //     until_timer *timer = new until_timer;
-                //     timer->user_data = &users_timer[connfd];
-                //     timer->cb_func = cb_func;
-                //     time_t cur = time(NULL);
-                //     timer->experc = cur + 3 * TIMESLOT;
-                //     users_timer[connfd].timer = timer;
-                //     timer_lst.add_timer(timer);
-                // }
-                // continue;
+                    // 初始化client_data数据
+                    // 创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
+                    users_timer[connfd].address = client_address;
+                    users_timer[connfd].sockfd = connfd;
+                    util_timer *timer = new util_timer;
+                    timer->user_data = &users_timer[connfd];
+                    timer->cb_func = cb_func;
+                    time_t cur = time(NULL);
+                    timer->expire = cur + 3 * TIMESLOT;
+                    users_timer[connfd].timer = timer;
+                    timer_lst.add_timer(timer);
+                }
+                continue;
             }
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
@@ -189,7 +195,7 @@ int main(int argc, char *argv[])
                 timer->cb_func(&users_timer[sockfd]);
                 if (timer)
                     timer_lst.del_timer(timer);
-                users[sockfd].close_conn();
+                // users[sockfd].close_conn();
             }
             // 处理信号
             else if ((sockfd == pipefd[0]) && (events[i].events & EPOLLIN))

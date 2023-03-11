@@ -11,17 +11,24 @@ const char *error_404_form = "The requested file was not found on this server.\n
 const char *error_500_title = "Internal Error";
 const char *error_500_form = "There was an unusual problem serving the request file.\n";
 
+// #define connfdLT
+#define connfdET
+
+// #define listenfdLT
+#define listenfdET
+
 int http_conn::m_epollfd = -1;
 int http_conn::m_user_count = 0;
 
 const char *doc_root = "/home/kun/webserver/rescources";
 
 // 设置文件描述符非阻塞
-void setnoblocking(int fd)
+int setnoblocking(int fd)
 {
     int old_flag = fcntl(fd, F_GETFL);
     int new_flag = old_flag | O_NONBLOCK;
     fcntl(fd, F_SETFL, new_flag);
+    return old_flag;
 }
 
 // 向epoll添加需要监听的文件描述符
@@ -30,7 +37,7 @@ void addfd(int epollfd, int fd, bool one_shot)
     epoll_event event;
     event.data.fd = fd;
     // event.events = EPOLLIN | EPOLLRDHUP;
-    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
+    event.events = EPOLLIN | EPOLLRDHUP;
     if (one_shot)
         event.events | EPOLLONESHOT;
     epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &event);
@@ -107,6 +114,7 @@ bool http_conn::read()
         return false;
     // 读取到的字节
     int byte_read = 0;
+#ifdef connfdET
     while (true)
     {
         byte_read = recv(m_socketfd, m_read_buffer + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0);
@@ -122,6 +130,7 @@ bool http_conn::read()
     }
     printf("读取的数据:\n%s", m_read_buffer);
     return true;
+#endif
 }
 
 // 解析http请求 主状态机  解析读入内容
@@ -170,6 +179,7 @@ http_conn::HTTP_CODE http_conn::process_read()
         }
         }
     }
+    return INTERNAL_ERROR; // 为了消去警告，无他
 }
 
 // 将 HTTP 响应添加到写缓冲区中
@@ -280,7 +290,8 @@ bool http_conn::process_write(HTTP_CODE ret)
     default:
         return false;
     }
-    printf("write_buffer : %s\n",m_write_buffer);
+    printf("write_buffer : %s\n", m_write_buffer);
+    return false;
 }
 
 // 解析http请求行,请求方法，url，http版本
@@ -486,4 +497,5 @@ void http_conn::process()
     if (!write_ret)
         close_conn();
     modfd(m_epollfd, m_socketfd, EPOLLOUT);
+    return;
 }

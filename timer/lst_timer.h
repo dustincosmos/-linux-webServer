@@ -22,44 +22,44 @@
 #include <sys/uio.h>
 #include <time.h>
 
-class until_timer;
+class util_timer;
 
 struct client_data
 {
     sockaddr_in address;
-    int socfd;
-    until_timer *timer;
+    int sockfd;
+    util_timer *timer;
 };
 
 // 定时器类
-class until_timer
+class util_timer
 {
 public:
-    time_t experc;
+    time_t expire;
     void (*cb_func)(client_data *);
-    until_timer *prev;
-    until_timer *next;
+    util_timer *prev;
+    util_timer *next;
     client_data *user_data;
 
-    until_timer() : prev(NULL), next(NULL) {}
-    ~until_timer() {}
+    util_timer() : prev(NULL), next(NULL) {}
+    ~util_timer() {}
 };
 
 class sort_timer_lst
 {
 private:
-    void add_timer(until_timer *timer, until_timer *lst_head);
+    void add_timer(util_timer *timer, util_timer *lst_head);
 
-    until_timer *head;
-    until_timer *tail;
+    util_timer *head;
+    util_timer *tail;
 
 public:
     sort_timer_lst();
     ~sort_timer_lst();
 
-    void add_timer(until_timer *timer);
-    void adjust_timer(until_timer *timer);
-    void del_timer(until_timer *timer);
+    void add_timer(util_timer *timer);
+    void adjust_timer(util_timer *timer);
+    void del_timer(util_timer *timer);
     void tick();
 };
 
