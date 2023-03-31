@@ -17,6 +17,7 @@
 #include "locker.h"
 #include <sys/uio.h>
 #include <string.h>
+#include"CGImysql/sql_connection_pool.h"
 class http_conn
 {
 
@@ -110,6 +111,9 @@ private:
     struct stat m_file_state; // 获取文件属性
     struct iovec m_iv[2];     // 向量，用于存储多元素数组
     int m_iv_count;
+    bool cgi; // 登录校验位
+    char* m_string;//请求头数据
+    MYSQL* mysql;
 
     CHECK_STATE m_check_state; // 主状态机当前状态
 
@@ -122,6 +126,8 @@ private:
     bool add_link();
     bool add_blank_line();
     bool add_content(const char *content);
+
+    void initmysql_result(connection_pool *connPool);
 };
 
 #endif
