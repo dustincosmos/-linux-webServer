@@ -637,7 +637,6 @@ void http_conn::process()
     HTTP_CODE read_ret = process_read();
     if (read_ret == NO_REQUEST)
     {
-        printf("how??33???\n");
         modfd(m_epollfd, m_socketfd, EPOLLIN);
         return;
     }
