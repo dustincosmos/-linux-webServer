@@ -125,6 +125,7 @@ void http_conn::init()
     m_read_idx = 0;
     m_write_idx = 0;
     cgi = false;
+    mysql = NULL;
 
     bzero(m_read_buffer, READ_BUFFER_SIZE);
     bzero(m_write_buffer, WRITE_BUFFER_SIZE);
@@ -282,7 +283,6 @@ bool http_conn::add_content(const char *content)
 //
 bool http_conn::process_write(HTTP_CODE ret)
 {
-    printf("jinlaile\n");
     switch (ret)
     {
     case INTERNAL_ERROR:
@@ -494,21 +494,23 @@ http_conn::HTTP_CODE http_conn::do_request()
             // 如果是注册，先检测数据库中是否有重名的
             // 没有重名的，进行增加数据
             char *sql_insert = (char *)malloc(sizeof(char) * 200);
-            strcpy(sql_insert, "INSERT INTO user(username, passwd) VALUES(");
+            strcpy(sql_insert, "insert into user(username, passwd) VALUES(");
             strcat(sql_insert, "'");
             strcat(sql_insert, name);
             strcat(sql_insert, "', '");
             strcat(sql_insert, password);
             strcat(sql_insert, "')");
-
+            printf("%s\n", sql_insert);
             if (users.find(name) == users.end())
             {
-                printf("do some target\n");
+                mysql = mysql_init(NULL);
+                mysql_real_connect(mysql,"127.0.0.1","root","123456","webDB",0,NULL,0);
                 m_lock.lock();
                 int res = mysql_query(mysql, sql_insert);
                 users.insert(pair<string, string>(name, password));
                 m_lock.unlock();
-
+                printf("do some targetasas\n");
+                mysql_close(mysql);
                 if (!res)
                     strcpy(m_url, "/log.html");
                 else
@@ -596,7 +598,6 @@ void http_conn::unmap()
 
 bool http_conn::write()
 {
-    printf(">>>>>jll\n");
     int temp = 0;
     int bytes_have_send = 0;
     int bytes_to_send = m_write_idx;

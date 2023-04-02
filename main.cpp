@@ -31,7 +31,7 @@ void addsig(int sig, void(handler)(int), bool restart = true)
     if (restart)
         sa.sa_flags |= SA_RESTART;
     sigfillset(&sa.sa_mask);
-    assert(sigaction(sig, &sa, NULL) != -1);
+    assert(sigaction(sig, &sa, NULL) != -1);//important
 }
 
 // 添加文件描述符到epoll
@@ -51,7 +51,6 @@ void sig_handler(int sig)
 
 void timer_handler()
 {
-    printf("why\n");
     timer_lst.tick();
     alarm(TIMESLOT);
 }
@@ -118,7 +117,7 @@ int main(int argc, char *argv[])
     bind(listenfd, (struct sockaddr *)&address, sizeof(address));
     listen(listenfd, 5);
 
-    // 创建内核时间表
+    // 创建内核事件表
     epoll_event events[MAX_EVENT_NUMBER];
     int epollfd = epoll_create(5);
 

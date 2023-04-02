@@ -115,6 +115,7 @@ private:
     bool cgi;       // 登录校验位
     char *m_string; // 请求头数据
     MYSQL *mysql;
+    
 
     CHECK_STATE m_check_state; // 主状态机当前状态
 

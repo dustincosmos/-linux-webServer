@@ -95,7 +95,6 @@ void sort_timer_lst::tick()
 {
     if (!head)
     {
-        printf("bushiba\n");
         return;
     }
     printf("time tick\n");
