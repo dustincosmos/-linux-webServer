@@ -22,7 +22,7 @@ const char *error_500_form = "There was an unusual problem serving the request f
 int http_conn::m_epollfd = -1;
 int http_conn::m_user_count = 0;
 
-std::map<std::string, std::string> users;
+map<string, string> users;
 locker m_lock;
 const char *doc_root = "/home/kun/webserver/rescources";
 
@@ -32,11 +32,11 @@ void http_conn::initmysql_result(connection_pool *connPool)
     MYSQL *mysql = NULL;
     connectionRAII mysqlcon(&mysql, connPool);
 
-    // // 在user表中检索username，passwd数据，浏览器端输入
-    // if (mysql_query(mysql, "SELECT username,passwd FROM user"))
-    // {
-    //     LOG_ERROR("SELECT error:%s\n", mysql_error(mysql));
-    // }
+    // 在user表中检索username，passwd数据，浏览器端输入
+    if (mysql_query(mysql, "SELECT username,passwd FROM user"))
+    {
+        printf("SELECT error:%s\n", mysql_error(mysql));
+    }
 
     // 从表中检索完整的结果集
     MYSQL_RES *result = mysql_store_result(mysql);
@@ -339,6 +339,11 @@ http_conn::HTTP_CODE http_conn::parse_request_line(char *text)
     char *method = text;
     if (strcasecmp(method, "GET") == 0)
         m_method = GET;
+    else if (strcasecmp(method, "POST") == 0)
+    {
+        m_method = POST;
+        cgi = 1;
+    }
     else
         return BAD_REQUEST;
     m_version = strpbrk(m_url, " \t");
@@ -405,6 +410,7 @@ http_conn::HTTP_CODE http_conn::parse_content(char *text)
     if (m_read_idx >= (m_content_length + m_checked_index))
     {
         text[m_content_length] = '\0';
+        m_string = text;
         return GET_REQUEST;
     }
     return NO_REQUEST;
@@ -449,11 +455,14 @@ http_conn::HTTP_CODE http_conn::do_request()
     strcpy(m_real_file, doc_root);
     int len = strlen(doc_root);
     strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);
-
     const char *p = strrchr(m_url, '/');
+
+    printf("do request\n");
+    printf("%s\n", p);
     if (cgi == 1 && (*(p + 1) == '2' || *(p + 1) == '3'))
     {
 
+        printf("do some target000\n");
         // 根据标志判断是登录检测还是注册检测
         char flag = m_url[1];
 
@@ -463,6 +472,8 @@ http_conn::HTTP_CODE http_conn::do_request()
         strncpy(m_real_file + len, m_url_real, FILENAME_LEN - len - 1);
         free(m_url_real);
 
+        printf("do some target001\n");
+        printf("%s\n", m_string);
         // 将用户名和密码提取出来
         // user=123&passwd=123
         char name[100], password[100];
@@ -475,10 +486,11 @@ http_conn::HTTP_CODE http_conn::do_request()
         for (i = i + 10; m_string[i] != '\0'; ++i, ++j)
             password[j] = m_string[i];
         password[j] = '\0';
-
+        printf("do some target002\n");
         // 同步线程登录校验
         if (*(p + 1) == '3')
         {
+            printf("do some target111\n");
             // 如果是注册，先检测数据库中是否有重名的
             // 没有重名的，进行增加数据
             char *sql_insert = (char *)malloc(sizeof(char) * 200);
@@ -491,7 +503,7 @@ http_conn::HTTP_CODE http_conn::do_request()
 
             if (users.find(name) == users.end())
             {
-
+                printf("do some target\n");
                 m_lock.lock();
                 int res = mysql_query(mysql, sql_insert);
                 users.insert(pair<string, string>(name, password));
@@ -632,7 +644,6 @@ bool http_conn::write()
 // 线程池中工作线程调用
 void http_conn::process()
 {
-    printf("how???\n");
     // 解析http请求
     HTTP_CODE read_ret = process_read();
     if (read_ret == NO_REQUEST)
@@ -640,7 +651,6 @@ void http_conn::process()
         modfd(m_epollfd, m_socketfd, EPOLLIN);
         return;
     }
-    printf("how?????\n");
     // 响应
     bool write_ret = process_write(read_ret);
     if (!write_ret)

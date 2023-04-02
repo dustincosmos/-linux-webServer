@@ -84,6 +84,10 @@ int main(int argc, char *argv[])
     // 对sigpie信号处理,忽略 SIGPIPE 信号，避免在网络编程中因为发送数据给一个已经关闭的套接字而导致程序崩溃。
     addsig(SIGPIPE, SIG_IGN);
 
+    // 创建数据库连接池
+    connection_pool *connPool = connection_pool::GetInstance();
+    connPool->init("127.0.0.1", "root", "123456", "webDB", 3306, 8);
+
     // 初始化线程池
     threadpool<http_conn> *pool = NULL;
     try
@@ -97,6 +101,9 @@ int main(int argc, char *argv[])
 
     // 保存客户端信息
     http_conn *users = new http_conn[MAX_FD];
+
+    // 初始化数据库读取表
+    users->initmysql_result(connPool);
 
     int listenfd = socket(PF_INET, SOCK_STREAM, 0);
     // 设置端口复用
@@ -239,7 +246,6 @@ int main(int argc, char *argv[])
                 util_timer *timer = users_timer[sockfd].timer;
                 if (users[sockfd].read())
                 {
-                    printf(">>>>\n");
                     pool->append(users + sockfd);
                     if (timer)
                     {
