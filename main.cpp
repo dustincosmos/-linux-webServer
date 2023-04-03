@@ -13,7 +13,8 @@
 #include <signal.h>
 #include <cassert>
 #include "http_conn.h"
-#include "lst_timer.h"
+// #include "lst_timer.h"
+#include "./timer/lst_timer.h"
 #include "./log/log.h"
 #define MAX_FD 65536          // 最大文件描述符个数
 #define MAX_EVENT_NUMBER 1000 // 监听最大数量
@@ -42,7 +43,6 @@ extern void removefd(int epolllfd, int fd);
 extern int setnoblocking(int fd);
 void sig_handler(int sig)
 {
-    printf("timne\n");
     // 为保证函数的可重入性，保留原来的errno
     int save_errno = errno;
     int msg = sig;
@@ -270,10 +270,6 @@ int main(int argc, char *argv[])
             }
             else if (events[i].events & EPOLLOUT)
             {
-                // if (!users[sockfd].write())
-                // {
-                //     users[sockfd].close_conn();
-                // }
                 util_timer *timer = users_timer[sockfd].timer;
                 if (users[sockfd].write())
                 {
@@ -283,7 +279,6 @@ int main(int argc, char *argv[])
                     {
                         time_t cur = time(NULL);
                         timer->expire = cur + 3 * TIMESLOT;
-                        printf("adjust timer once\n");
                         timer_lst.adjust_timer(timer);
                     }
                 }

@@ -23,7 +23,6 @@
 #include <time.h>
 
 class util_timer;
-
 struct client_data
 {
     sockaddr_in address;
@@ -42,7 +41,6 @@ public:
     client_data *user_data;
 
     util_timer() : prev(NULL), next(NULL) {}
-    ~util_timer() {}
 };
 
 class sort_timer_lst
@@ -63,26 +61,26 @@ public:
     void tick();
 };
 
-class Utils
-{
-private:
-    static int *u_pipefd;
-    sort_timer_lst m_timer_lst;
-    int m_TIEMSHOT;
+// class Utils
+// {
+// private:
+//     static int *u_pipefd;
+//     sort_timer_lst m_timer_lst;
+//     int m_TIEMSHOT;
 
-public:
-    Utils();
-    ~Utils();
-    void init(int timeslot);
-    int setnonblocking(int fd);
-    void addfd(int epollfd, int fd, bool one_shot, int TRIGMode);
-    static void sig_handler(int sig);
-    void addsig(int sig, void(handlder)(int), bool restart = true);
-    void time_handler();
-    void show_error(int connfd, const char *info);
-    static int u_epollfd;
-};
+// public:
+//     Utils();
+//     ~Utils();
+//     void init(int timeslot);
+//     int setnonblocking(int fd);
+//     void addfd(int epollfd, int fd, bool one_shot, int TRIGMode);
+//     static void sig_handler(int sig);
+//     void addsig(int sig, void(handlder)(int), bool restart = true);
+//     void time_handler();
+//     void show_error(int connfd, const char *info);
+//     static int u_epollfd;
+// };
 
-void cb_func(client_data *user_data);
+// void cb_func(client_data *user_data);
 
 #endif
