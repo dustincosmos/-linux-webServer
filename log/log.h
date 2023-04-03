@@ -19,6 +19,7 @@ private:
             fputs(single_log.c_str(), m_fp);
             m_mutex.unlock();
         }
+        return NULL;
     }
 
 private:
@@ -44,6 +45,7 @@ public:
     static void *flush_log_thread(void *args)
     {
         get_instance()->async_write_log();
+        return NULL;
     }
 
     bool init(const char *file_name, int log_buffer_size = 8192, int split_lines = 5000000, int max_queue_size = 0);

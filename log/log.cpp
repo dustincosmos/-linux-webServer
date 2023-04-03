@@ -146,6 +146,7 @@ void Log::write_log(int level, const char *format, ...)
     }
 
     va_end(valst);
+    return ;
 }
 
 void Log::flush(void)

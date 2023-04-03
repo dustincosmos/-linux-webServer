@@ -112,6 +112,8 @@ private:
     struct stat m_file_state; // 获取文件属性
     struct iovec m_iv[2];     // 向量，用于存储多元素数组
     int m_iv_count;
+    int bytes_to_send;
+    int bytes_have_send;
     bool cgi;       // 登录校验位
     char *m_string; // 请求头数据
     MYSQL *mysql;

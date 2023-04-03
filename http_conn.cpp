@@ -126,6 +126,8 @@ void http_conn::init()
     m_write_idx = 0;
     cgi = false;
     mysql = NULL;
+    bytes_have_send = 0;
+    bytes_to_send = 0;
 
     bzero(m_read_buffer, READ_BUFFER_SIZE);
     bzero(m_write_buffer, WRITE_BUFFER_SIZE);
@@ -320,6 +322,7 @@ bool http_conn::process_write(HTTP_CODE ret)
             m_iv[1].iov_base = m_file_address;
             m_iv[1].iov_len = m_file_state.st_size;
             m_iv_count = 2;
+            bytes_to_send = m_write_idx + m_file_state.st_size;
             return true;
         }
     }
@@ -504,7 +507,7 @@ http_conn::HTTP_CODE http_conn::do_request()
             if (users.find(name) == users.end())
             {
                 mysql = mysql_init(NULL);
-                mysql_real_connect(mysql,"127.0.0.1","root","123456","webDB",0,NULL,0);
+                mysql_real_connect(mysql, "127.0.0.1", "root", "123456", "webDB", 0, NULL, 0);
                 m_lock.lock();
                 int res = mysql_query(mysql, sql_insert);
                 users.insert(pair<string, string>(name, password));
@@ -599,8 +602,8 @@ void http_conn::unmap()
 bool http_conn::write()
 {
     int temp = 0;
-    int bytes_have_send = 0;
-    int bytes_to_send = m_write_idx;
+    // int bytes_have_send = 0;
+    // int bytes_to_send = m_write_idx;
     if (bytes_to_send == 0)
     {
         modfd(m_epollfd, m_socketfd, EPOLLIN);
@@ -620,22 +623,35 @@ bool http_conn::write()
             unmap();
             return false;
         }
-    }
-    bytes_to_send -= temp;
-    bytes_have_send += temp;
-    if (bytes_to_send <= bytes_have_send)
-    {
-        unmap();
-        if (m_link)
+
+        bytes_have_send += temp;
+        bytes_to_send -= temp;
+        if (bytes_have_send >= m_iv[0].iov_len)
         {
-            init();
-            modfd(m_epollfd, m_socketfd, EPOLLIN);
-            return true;
+            m_iv[0].iov_len = 0;
+            m_iv[1].iov_base = m_file_address + (bytes_have_send - m_write_idx);
+            m_iv[1].iov_len = bytes_to_send;
         }
         else
         {
+            m_iv[0].iov_base = m_write_buffer + bytes_have_send;
+            m_iv[0].iov_len = m_iv[0].iov_len - bytes_have_send;
+        }
+
+        if (bytes_to_send <= 0)
+        {
+            unmap();
             modfd(m_epollfd, m_socketfd, EPOLLIN);
-            return false;
+
+            if (m_link)
+            {
+                init();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
     printf("写的数据：\n%s", m_write_buffer);

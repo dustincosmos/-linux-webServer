@@ -14,6 +14,7 @@
 #include <cassert>
 #include "http_conn.h"
 #include "lst_timer.h"
+#include "./log/log.h"
 #define MAX_FD 65536          // 最大文件描述符个数
 #define MAX_EVENT_NUMBER 1000 // 监听最大数量
 #define TIMESLOT 5            // 最小超时单位
@@ -31,7 +32,7 @@ void addsig(int sig, void(handler)(int), bool restart = true)
     if (restart)
         sa.sa_flags |= SA_RESTART;
     sigfillset(&sa.sa_mask);
-    assert(sigaction(sig, &sa, NULL) != -1);//important
+    assert(sigaction(sig, &sa, NULL) != -1); // important
 }
 
 // 添加文件描述符到epoll
@@ -60,6 +61,9 @@ void cb_func(client_data *user_data)
     epoll_ctl(epollfd, EPOLL_CTL_DEL, user_data->sockfd, 0);
     close(user_data->sockfd);
     http_conn::m_user_count--;
+
+    LOG_INFO("close fd %d", user_data->sockfd);
+    Log::get_instance()->flush();
 }
 
 void show_error(int connfd, const char *info)
@@ -71,6 +75,7 @@ void show_error(int connfd, const char *info)
 
 int main(int argc, char *argv[])
 {
+    Log::get_instance()->init("ServerLog", 2000, 800000, 0); // 同步日志模型
     if (argc <= 1)
     {
         printf("按照如下格式允许:%s port_number\n", basename(argv[0]));
